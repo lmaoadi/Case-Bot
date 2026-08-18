@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Case Bot</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #111214;
+      color: white;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 520px;
+      background: #1e1f22;
+      border: 1px solid #2b2d31;
+      border-radius: 16px;
+      padding: 28px;
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.35);
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      text-align: center;
+      font-size: 28px;
+    }
+
+    .subtitle {
+      margin: 0 0 24px;
+      text-align: center;
+      color: #b5bac1;
+      font-size: 14px;
+    }
+
+    label {
+      display: block;
+      margin: 16px 0 7px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      border: 1px solid #3f4147;
+      border-radius: 9px;
+      padding: 12px 13px;
+      background: #2b2d31;
+      color: white;
+      font: inherit;
+      outline: none;
+    }
+
+    input:focus,
+    textarea:focus {
+      border-color: #5865f2;
+    }
+
+    textarea {
+      min-height: 110px;
+      resize: vertical;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 22px;
+      padding: 13px;
+      border: 0;
+      border-radius: 9px;
+      background: #5865f2;
+      color: white;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #4752c4;
+    }
+
+    .message {
+      display: none;
+      margin-top: 14px;
+      padding: 11px;
+      border-radius: 8px;
+      text-align: center;
+      background: #2b2d31;
+      color: #b5bac1;
+      font-size: 13px;
+    }
+
+    .footer {
+      margin-top: 18px;
+      text-align: center;
+      color: #72767d;
+      font-size: 12px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <main class="card">
+
+    <h1>Case Bot</h1>
+
+    <p class="subtitle">
+      Submit a case for review
+    </p>
+
+    <form id="caseForm">
+
+      <label for="discordId">
+        Discord ID
+      </label>
+
+      <input
+        id="discordId"
+        name="discordId"
+        type="text"
+        placeholder="Enter Discord ID"
+        required
+      >
+
+      <label for="robloxId">
+        Roblox User ID
+      </label>
+
+      <input
+        id="robloxId"
+        name="robloxId"
+        type="text"
+        placeholder="Enter Roblox User ID"
+        required
+      >
+
+      <label for="robloxUsername">
+        Roblox Username
+      </label>
+
+      <input
+        id="robloxUsername"
+        name="robloxUsername"
+        type="text"
+        placeholder="Enter Roblox Username"
+        required
+      >
+
+      <label for="reason">
+        Reason
+      </label>
+
+      <textarea
+        id="reason"
+        name="reason"
+        placeholder="Enter the reason"
+        required
+      ></textarea>
+
+      <button type="submit">
+        Submit Case
+      </button>
+
+      <div class="message" id="message"></div>
+
+    </form>
+
+    <div class="footer">
+      Case Bot
+    </div>
+
+  </main>
+
+  <script>
+    document
+      .getElementById("caseForm")
+      .addEventListener("submit", function(event) {
+
+        event.preventDefault();
+
+        const message = document.getElementById("message");
+
+        message.textContent =
+          "Case form is working. Discord connection will be added later.";
+
+        message.style.display = "block";
+      });
+  </script>
+
+</body>
+</html>
