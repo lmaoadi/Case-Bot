@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Case Bot</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #111214;
+      color: #ffffff;
+      font-family: Arial, Helvetica, sans-serif;
+      padding: 25px 15px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: 32px;
+      font-weight: 700;
+    }
+
+    .panel {
+      background: #1e1f22;
+      border: 1px solid #2b2d31;
+      border-radius: 14px;
+      padding: 22px;
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      margin-top: 18px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    label:first-child {
+      margin-top: 0;
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      background: #2b2d31;
+      border: 1px solid #3f4147;
+      border-radius: 8px;
+      color: #ffffff;
+      padding: 12px;
+      font-size: 15px;
+      font-family: Arial, Helvetica, sans-serif;
+      outline: none;
+    }
+
+    input:focus,
+    textarea:focus {
+      border-color: #5865f2;
+    }
+
+    textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    .hint {
+      color: #949ba4;
+      font-size: 12px;
+      margin-top: 6px;
+    }
+
+    .generate-button {
+      width: 100%;
+      margin-top: 22px;
+      padding: 13px;
+      border: none;
+      border-radius: 8px;
+      background: #5865f2;
+      color: white;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .generate-button:hover {
+      background: #4752c4;
+    }
+
+    .generate-button:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
+
+    .result-panel {
+      display: none;
+    }
+
+    .result-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .result-header h2 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .copy-button {
+      border: none;
+      border-radius: 7px;
+      background: #2b2d31;
+      color: #ffffff;
+      padding: 8px 13px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .copy-button:hover {
+      background: #3a3c42;
+    }
+
+    .output {
+  width: 100%;
+  min-height: 180px;
+  padding: 15px;
+  border-radius: 9px;
+  background: #111214;
+  border: 1px solid #2b2d31;
+  color: #dcdee1;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  box-sizing: border-box;
+    }
+
+    .status {
+      margin-top: 10px;
+      color: #949ba4;
+      font-size: 12px;
+      text-align: center;
+    }
+
+    .error {
+      color: #ed4245;
+      margin-top: 10px;
+      font-size: 13px;
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+
+    <div class="header">
+      <h1>Case Bot</h1>
+    </div>
+
+    <div class="panel">
+
+      <form id="caseForm">
+
+        <label for="discordId">
+          Discord ID
+        </label>
+
+        <input
+          id="discordId"
+          type="text"
+          placeholder="Enter Discord ID"
+          autocomplete="off"
+          required
+        >
+
+        <label for="robloxUsernames">
+          Roblox Username(s)
+        </label>
+
+        <input
+          id="robloxUsernames"
+          type="text"
+          placeholder="Enter username(s)"
+          autocomplete="off"
+          required
+        >
+
+        <div class="hint">
+          Separate multiple usernames with spaces.
+        </div>
+
+        <label for="reason">
+          Reason
+        </label>
+
+        <textarea
+          id="reason"
+          placeholder="Enter the reason"
+          required
+        ></textarea>
+
+        <button
+          class="generate-button"
+          id="generateButton"
+          type="submit"
+        >
+          Generate Case
+        </button>
+
+        <div
+          class="error"
+          id="error"
+        ></div>
+
+      </form>
+
+    </div>
+
+    <div
+      class="panel result-panel"
+      id="resultPanel"
+    >
+
+      <div class="result-header">
+
+        <h2>Generated Case</h2>
+
+        <button
+          class="copy-button"
+          id="copyButton"
+          type="button"
+        >
+          Copy
+        </button>
+
+      </div>
+
+      <div
+        class="output"
+        id="output"
+      ></div>
+
+      <div
+        class="status"
+        id="status"
+      ></div>
+
+    </div>
+
+  </div>
+
+
+  <script>
+
+    const WORKER_URL =
+      "https://case-bot-api.4jhw7vs899.workers.dev";
+
+    const form =
+      document.getElementById("caseForm");
+
+    const resultPanel =
+      document.getElementById("resultPanel");
+
+    const output =
+      document.getElementById("output");
+
+    const copyButton =
+      document.getElementById("copyButton");
+
+    const status =
+      document.getElementById("status");
+
+    const error =
+      document.getElementById("error");
+
+    const generateButton =
+      document.getElementById("generateButton");
+
+
+    let generatedText = "";
+
+
+    form.addEventListener("submit", async function(event) {
+
+      event.preventDefault();
+
+      error.style.display = "none";
+      status.textContent = "";
+      resultPanel.style.display = "none";
+
+      const discordId =
+        document
+          .getElementById("discordId")
+          .value
+          .trim();
+
+      const usernameInput =
+        document
+          .getElementById("robloxUsernames")
+          .value
+          .trim();
+
+      const reason =
+        document
+          .getElementById("reason")
+          .value
+          .trim();
+
+
+      if (!discordId || !usernameInput || !reason) {
+
+        error.textContent =
+          "Please fill in every field.";
+
+        error.style.display = "block";
+
+        return;
+      }
+
+
+      const usernames =
+        usernameInput
+          .split(/\s+/)
+          .filter(Boolean);
+
+
+      generateButton.disabled = true;
+      generateButton.textContent =
+        "Looking up Roblox users...";
+
+
+      try {
+
+        const response =
+          await fetch(WORKER_URL, {
+
+            method: "POST",
+
+            headers: {
+              "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify({
+              usernames: usernames
+            })
+
+          });
+
+
+        const data =
+          await response.json();
+
+
+        if (!response.ok) {
+
+          throw new Error(
+            data.error ||
+            "Roblox lookup failed."
+          );
+
+        }
+
+
+        if (!Array.isArray(data.data)) {
+
+          throw new Error(
+            "Invalid response from the backend."
+          );
+
+        }
+
+
+        const usersByInput =
+          new Map();
+
+        data.data.forEach(function(user) {
+
+          usersByInput.set(
+            user.requestedUsername?.toLowerCase() ||
+            user.name?.toLowerCase(),
+            user
+          );
+
+        });
+
+
+        const finalUsernames = [];
+        const finalIds = [];
+        const missingUsers = [];
+
+
+        usernames.forEach(function(username) {
+
+          const user =
+            usersByInput.get(
+              username.toLowerCase()
+            );
+
+
+          if (user) {
+
+            finalUsernames.push(
+              user.name
+            );
+
+            finalIds.push(
+              String(user.id)
+            );
+
+          } else {
+
+            missingUsers.push(username);
+
+          }
+
+        });
+
+
+        if (missingUsers.length > 0) {
+
+          throw new Error(
+            "Could not find: " +
+            missingUsers.join(", ")
+          );
+
+        }
+
+
+        generatedText =
+          "**Discord ID:** " +
+          discordId +
+
+          "\n" +
+
+          "**Roblox Username:** " +
+          finalUsernames.join(" ") +
+
+          "\n" +
+
+          "**Roblox User ID:** " +
+          finalIds.join(" ") +
+
+          "\n" +
+
+          "**Reason:** " +
+          reason;
+
+
+        output.textContent =
+          generatedText;
+
+
+        resultPanel.style.display =
+          "block";
+
+
+        status.textContent =
+          "Roblox User IDs found successfully.";
+
+
+        resultPanel.scrollIntoView({
+          behavior: "smooth",
+          block: "start"
+        });
+
+
+      } catch (err) {
+
+        error.textContent =
+          err.message ||
+          "Something went wrong.";
+
+        error.style.display =
+          "block";
+
+      } finally {
+
+        generateButton.disabled =
+          false;
+
+        generateButton.textContent =
+          "Generate Case";
+
+      }
+
+    });
+
+
+    copyButton.addEventListener(
+      "click",
+      async function() {
+
+        try {
+
+          await navigator.clipboard
+            .writeText(generatedText);
+
+        } catch (err) {
+
+          const textArea =
+            document.createElement("textarea");
+
+          textArea.value =
+            generatedText;
+
+          document.body.appendChild(
+            textArea
+          );
+
+          textArea.select();
+
+          document.execCommand("copy");
+
+          textArea.remove();
+
+        }
+
+
+        copyButton.textContent =
+          "Copied!";
+
+
+        setTimeout(function() {
+
+          copyButton.textContent =
+            "Copy";
+
+        }, 1500);
+
+      }
+    );
+
+  </script>
+
+</body>
+</html>
