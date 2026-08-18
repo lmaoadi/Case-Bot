@@ -103,6 +103,11 @@
       background: #4752c4;
     }
 
+    .generate-button:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
+
     .result-panel {
       display: none;
     }
@@ -218,6 +223,7 @@
 
         <button
           class="generate-button"
+          id="generateButton"
           type="submit"
         >
           Generate Case
@@ -265,128 +271,286 @@
 
   </div>
 
+
   <script>
 
-    const form = document.getElementById("caseForm");
-    const resultPanel = document.getElementById("resultPanel");
-    const output = document.getElementById("output");
-    const copyButton = document.getElementById("copyButton");
-    const status = document.getElementById("status");
-    const error = document.getElementById("error");
+    const WORKER_URL =
+      "https://case-bot-api.4jhw7vs899.workers.dev";
+
+    const form =
+      document.getElementById("caseForm");
+
+    const resultPanel =
+      document.getElementById("resultPanel");
+
+    const output =
+      document.getElementById("output");
+
+    const copyButton =
+      document.getElementById("copyButton");
+
+    const status =
+      document.getElementById("status");
+
+    const error =
+      document.getElementById("error");
+
+    const generateButton =
+      document.getElementById("generateButton");
+
 
     let generatedText = "";
 
-    form.addEventListener("submit", function(event) {
+
+    form.addEventListener("submit", async function(event) {
 
       event.preventDefault();
 
       error.style.display = "none";
       status.textContent = "";
+      resultPanel.style.display = "none";
 
       const discordId =
-        document.getElementById("discordId").value.trim();
+        document
+          .getElementById("discordId")
+          .value
+          .trim();
 
       const usernameInput =
-        document.getElementById("robloxUsernames").value.trim();
+        document
+          .getElementById("robloxUsernames")
+          .value
+          .trim();
 
       const reason =
-        document.getElementById("reason").value.trim();
+        document
+          .getElementById("reason")
+          .value
+          .trim();
+
 
       if (!discordId || !usernameInput || !reason) {
-        error.textContent = "Please fill in every field.";
+
+        error.textContent =
+          "Please fill in every field.";
+
         error.style.display = "block";
+
         return;
       }
 
-      /*
-        Multiple usernames are separated by spaces.
-        Example:
-        tarsoza1 example123 anotherUser
-      */
 
       const usernames =
-        usernameInput.split(/\s+/).filter(Boolean);
-
-      /*
-        TEMPORARY:
-        User IDs are not looked up here yet.
-
-        The backend will later automatically convert:
-
-        Username → Roblox User ID
-
-        before generating the final case.
-      */
-
-      const temporaryIds =
-        usernames.map(() => "[User ID lookup pending]");
-
-      generatedText =
-        "**Discord ID:** " + discordId +
-        "\n\n" +
-
-        "**Roblox Username:** " +
-        usernames.join(" ") +
-        "\n\n" +
-
-        "**Roblox User ID:** " +
-        temporaryIds.join(" ") +
-        "\n\n" +
-
-        "**Reason:** " +
-        reason;
-
-      output.textContent = generatedText;
-
-      resultPanel.style.display = "block";
-
-      status.textContent =
-        "User ID lookup will be connected to the backend next.";
-
-      resultPanel.scrollIntoView({
-        behavior: "smooth",
-        block: "start"
-      });
-
-    });
+        usernameInput
+          .split(/\s+/)
+          .filter(Boolean);
 
 
-    copyButton.addEventListener("click", async function() {
+      generateButton.disabled = true;
+      generateButton.textContent =
+        "Looking up Roblox users...";
+
 
       try {
 
-        await navigator.clipboard.writeText(generatedText);
+        const response =
+          await fetch(WORKER_URL, {
 
-        copyButton.textContent = "Copied!";
+            method: "POST",
 
-        setTimeout(function() {
-          copyButton.textContent = "Copy";
-        }, 1500);
+            headers: {
+              "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify({
+              usernames: usernames
+            })
+
+          });
+
+
+        const data =
+          await response.json();
+
+
+        if (!response.ok) {
+
+          throw new Error(
+            data.error ||
+            "Roblox lookup failed."
+          );
+
+        }
+
+
+        if (!Array.isArray(data.data)) {
+
+          throw new Error(
+            "Invalid response from the backend."
+          );
+
+        }
+
+
+        const usersByInput =
+          new Map();
+
+        data.data.forEach(function(user) {
+
+          usersByInput.set(
+            user.requestedUsername?.toLowerCase() ||
+            user.name?.toLowerCase(),
+            user
+          );
+
+        });
+
+
+        const finalUsernames = [];
+        const finalIds = [];
+        const missingUsers = [];
+
+
+        usernames.forEach(function(username) {
+
+          const user =
+            usersByInput.get(
+              username.toLowerCase()
+            );
+
+
+          if (user) {
+
+            finalUsernames.push(
+              user.name
+            );
+
+            finalIds.push(
+              String(user.id)
+            );
+
+          } else {
+
+            missingUsers.push(username);
+
+          }
+
+        });
+
+
+        if (missingUsers.length > 0) {
+
+          throw new Error(
+            "Could not find: " +
+            missingUsers.join(", ")
+          );
+
+        }
+
+
+        generatedText =
+          "**Discord ID:** " +
+          discordId +
+
+          "\n\n" +
+
+          "**Roblox Username:** " +
+          finalUsernames.join(" ") +
+
+          "\n\n" +
+
+          "**Roblox User ID:** " +
+          finalIds.join(" ") +
+
+          "\n\n" +
+
+          "**Reason:** " +
+          reason;
+
+
+        output.textContent =
+          generatedText;
+
+
+        resultPanel.style.display =
+          "block";
+
+
+        status.textContent =
+          "Roblox User IDs found successfully.";
+
+
+        resultPanel.scrollIntoView({
+          behavior: "smooth",
+          block: "start"
+        });
+
 
       } catch (err) {
 
-        const textArea =
-          document.createElement("textarea");
+        error.textContent =
+          err.message ||
+          "Something went wrong.";
 
-        textArea.value = generatedText;
+        error.style.display =
+          "block";
 
-        document.body.appendChild(textArea);
+      } finally {
 
-        textArea.select();
+        generateButton.disabled =
+          false;
 
-        document.execCommand("copy");
-
-        textArea.remove();
-
-        copyButton.textContent = "Copied!";
-
-        setTimeout(function() {
-          copyButton.textContent = "Copy";
-        }, 1500);
+        generateButton.textContent =
+          "Generate Case";
 
       }
 
     });
+
+
+    copyButton.addEventListener(
+      "click",
+      async function() {
+
+        try {
+
+          await navigator.clipboard
+            .writeText(generatedText);
+
+        } catch (err) {
+
+          const textArea =
+            document.createElement("textarea");
+
+          textArea.value =
+            generatedText;
+
+          document.body.appendChild(
+            textArea
+          );
+
+          textArea.select();
+
+          document.execCommand("copy");
+
+          textArea.remove();
+
+        }
+
+
+        copyButton.textContent =
+          "Copied!";
+
+
+        setTimeout(function() {
+
+          copyButton.textContent =
+            "Copy";
+
+        }, 1500);
+
+      }
+    );
 
   </script>
 
